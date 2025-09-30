@@ -13,7 +13,7 @@
 
 ---
 
-### **MenuGUI (PyQt GUI)**
+#### **MenuGUI (PyQt GUI)**
 
 * Initialize main window
 * Build layout (frames, widgets, containers)
