@@ -1,7 +1,0 @@
-{
-  "meals": [
-    {"name": "Pasta Bolognese", "day": "Monday", "type": "Lunch", "allergens": "gluten"},
-    {"name": "Veggie Curry", "day": "Tuesday", "type": "Lunch", "allergens": "vegan"},
-    {"name": "Chicken Salad", "day": "Wednesday", "type": "Lunch", "allergens": "gluten-free"}
-  ]
-}

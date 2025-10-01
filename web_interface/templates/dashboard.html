@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>School Lunch Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin: 0;
+        }
+        .logout-btn {
+            background-color: #f44336;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .logout-btn:hover {
+            background-color: #da190b;
+        }
+        .meals-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .meal-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .meal-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .meal-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .meal-description {
+            color: #666;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        .meal-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 15px;
+        }
+        .rating-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .current-rating {
+            margin-bottom: 10px;
+        }
+        .stars {
+            font-size: 20px;
+            color: #ddd;
+        }
+        .stars .filled {
+            color: #ffc107;
+        }
+        .rating-count {
+            font-size: 12px;
+            color: #666;
+        }
+        .rate-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .rate-btn {
+            background: #ffc107;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .rate-btn:hover {
+            background: #e0a800;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .order-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            flex: 1;
+        }
+        .order-btn:hover {
+            background-color: #45a049;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            z-index: 1000;
+        }
+        .message.success {
+            background-color: #4CAF50;
+        }
+        .message.error {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Welcome, {{ username }}!</h1>
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+
+    <div id="mealsContainer" class="meals-container">
+        <div class="loading">Loading meals...</div>
+    </div>
+
+    <script>
+        let currentUser = "{{ username }}";
+        
+        function showMessage(text, type = 'success') {
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.remove();
+            }, 3000);
+        }
+
+        function renderStars(rating) {
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= Math.floor(rating)) {
+                    stars += '<span class="filled">★</span>';
+                } else if (i === Math.ceil(rating) && rating % 1 !== 0) {
+                    stars += '<span class="filled">★</span>';
+                } else {
+                    stars += '<span>★</span>';
+                }
+            }
+            return stars;
+        }
+
+        function orderMeal(mealId) {
+            fetch('/api/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ meal_id: mealId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Order placed successfully!', 'success');
+                } else {
+                    showMessage(data.error || 'Failed to place order', 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Error placing order', 'error');
+            });
+        }
+
+        function rateMeal(mealId, rating) {
+            fetch('/api/rate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ meal_id: mealId, rating: rating })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Rating submitted!', 'success');
+                    loadMeals(); // Reload meals to show updated rating
+                } else {
+                    showMessage(data.error || 'Failed to submit rating', 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Error submitting rating', 'error');
+            });
+        }
+
+        function loadMeals() {
+            fetch('/api/meals')
+                .then(response => response.json())
+                .then(meals => {
+                    const container = document.getElementById('mealsContainer');
+                    
+                    if (meals.length === 0) {
+                        container.innerHTML = '<div class="loading">No meals available</div>';
+                        return;
+                    }
+                    
+                    container.innerHTML = meals.map(meal => `
+                        <div class="meal-card">
+                            <div class="meal-name">${meal.name}</div>
+                            <div class="meal-description">${meal.description || ''}</div>
+                            <div class="meal-price">${meal.price} SEK</div>
+                            
+                            <div class="rating-section">
+                                <div class="current-rating">
+                                    <div class="stars">${renderStars(meal.rating)}</div>
+                                    <div class="rating-count">
+                                        ${meal.rating.toFixed(1)}/5.0 (${meal.rating_count} ratings)
+                                    </div>
+                                </div>
+                                
+                                <div>Rate this meal:</div>
+                                <div class="rate-buttons">
+                                    ${[1,2,3,4,5].map(star => 
+                                        `<button class="rate-btn" onclick="rateMeal(${meal.id}, ${star})">${star}★</button>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button class="order-btn" onclick="orderMeal(${meal.id})">
+                                    Order This Meal
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                })
+                .catch(error => {
+                    document.getElementById('mealsContainer').innerHTML = 
+                        '<div class="loading">Error loading meals</div>';
+                });
+        }
+
+        // Load meals when page loads
+        loadMeals();
+    </script>
+</body>
+</html>
