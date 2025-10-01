@@ -450,6 +450,8 @@ This project is part of an educational assignment at Nackademin.
 ## 👥 Authors
 
 - JohannesFalk99
+- Milad
+- Antonio
 
 ---
 
