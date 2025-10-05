@@ -3,12 +3,12 @@ import sys
 import subprocess
 import time
 
-def setup_database():
+def setup_database() -> bool:
     if not os.path.exists('test.db'):
         subprocess.run([sys.executable, 'create_sample_database.py', '--reset'], check=True)
     return True
 
-def launch_web_app():
+def launch_web_app() -> bool:
     web_app_path = os.path.join('web_interface', 'flask_server.py')
     if not os.path.exists(web_app_path):
         return False
@@ -23,7 +23,7 @@ def launch_web_app():
         process.terminate()
     return True
 
-def main():
+def main() -> None:
     setup_database()
     launch_web_app()
 

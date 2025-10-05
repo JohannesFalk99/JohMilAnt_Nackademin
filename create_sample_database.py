@@ -3,8 +3,9 @@ import sys
 import argparse
 from datetime import datetime, timedelta
 from lunch_system_database import SchoolLunchDB
+from typing import List, Dict, Any
 
-def create_sample_students():
+def create_sample_students() -> List[Dict[str, str]]:
     return [
         {"name": "Alice Johansson", "grade": "9", "class": "9A", "allergies": "nötter", "external_account_id": "student_001"},
         {"name": "Björn Svensson", "grade": "10", "class": "10B", "allergies": "ingen", "external_account_id": "student_002"},
@@ -35,7 +36,7 @@ def create_sample_students():
 
 
 
-def create_sample_meals():
+def create_sample_meals() -> List[Dict[str, Any]]:
     return [
         {
             "name": "Köttbullar med potatismos",
@@ -103,8 +104,8 @@ def create_sample_meals():
         }
     ]
 
-def setup_database(db_path='test.db', reset=False, verbose=False):
-    def log(message):
+def setup_database(db_path: str = 'test.db', reset: bool = False, verbose: bool = False) -> None:
+    def log(message: str) -> None:
         if verbose:
             print(f"  {message}")
     
