@@ -154,13 +154,15 @@ FILE STRUCTURE AND FUNCTIONALITY:
 """
 
 from database_wrapper import SQLiteDB
+from typing import List, Dict, Optional, Any, Tuple
+import sqlite3
 
 class SchoolLunchDB:
-    def __init__(self, db_path):
-        self.db = SQLiteDB(db_path)
+    def __init__(self, db_path: str) -> None:
+        self.db: SQLiteDB = SQLiteDB(db_path)
         self.initialize_database()
 
-    def initialize_database(self):
+    def initialize_database(self) -> None:
         """Create the basic tables if they don't exist"""
         with self.db.transaction():
             self.db.execute_write("""
@@ -213,40 +215,40 @@ class SchoolLunchDB:
 
     # --- BASIC OPERATIONS ---
 
-    def add_student(self, student_info):
+    def add_student(self, student_info: Dict[str, Any]) -> Optional[int]:
         cols, vals = zip(*student_info.items())
         sql = f"INSERT INTO students ({','.join(cols)}) VALUES ({','.join(['?']*len(vals))})"
         with self.db.transaction():
             return self.db.execute_write(sql, vals)
 
-    def add_meal(self, meal_info):
+    def add_meal(self, meal_info: Dict[str, Any]) -> Optional[int]:
         cols, vals = zip(*meal_info.items())
         sql = f"INSERT INTO meals ({','.join(cols)}) VALUES ({','.join(['?']*len(vals))})"
         with self.db.transaction():
             return self.db.execute_write(sql, vals)
 
-    def schedule_meal(self, meal_id, date, quantity=0):
+    def schedule_meal(self, meal_id: int, date: str, quantity: int = 0) -> Optional[int]:
         sql = "INSERT INTO meal_schedule (meal_id, date, available_quantity) VALUES (?, ?, ?)"
         with self.db.transaction():
             return self.db.execute_write(sql, (meal_id, date, quantity))
 
-    def record_transaction(self, student_id, meal_id, date):
+    def record_transaction(self, student_id: int, meal_id: int, date: str) -> Optional[int]:
         sql = "INSERT INTO transactions (student_id, meal_id, date) VALUES (?, ?, ?)"
         with self.db.transaction():
             return self.db.execute_write(sql, (student_id, meal_id, date))
 
     # --- BASIC QUERIES ---
 
-    def get_all_students(self):
+    def get_all_students(self) -> None:
         self.db.execute("SELECT * FROM students ORDER BY name")
         #print all students
         print(self.db.execute("SELECT * FROM students ORDER BY name"))
         return 
 
-    def get_all_meals(self):
+    def get_all_meals(self) -> List[sqlite3.Row]:
         return self.db.execute("SELECT * FROM meals ORDER BY name")
 
-    def get_meals_by_date(self, date):
+    def get_meals_by_date(self, date: str) -> List[sqlite3.Row]:
         sql = """SELECT m.*, ms.available_quantity 
                  FROM meals m
                  JOIN meal_schedule ms ON m.id = ms.meal_id
@@ -254,7 +256,7 @@ class SchoolLunchDB:
                  ORDER BY m.name"""
         return self.db.execute(sql, (date,))
 
-    def get_student_transactions(self, student_id):
+    def get_student_transactions(self, student_id: int) -> List[sqlite3.Row]:
         sql = """SELECT t.*, m.name as meal_name
                  FROM transactions t
                  JOIN meals m ON t.meal_id = m.id
@@ -262,7 +264,7 @@ class SchoolLunchDB:
                  ORDER BY t.date DESC"""
         return self.db.execute(sql, (student_id,))
 
-    def rate_meal(self, meal_id, rating):
+    def rate_meal(self, meal_id: int, rating: float) -> bool:
         """Add a rating to a meal (1-5 stars) and update average"""
         # Get current rating info
         meal = self.db.execute("SELECT rating, rating_count FROM meals WHERE id = ?", (meal_id,))
@@ -282,7 +284,7 @@ class SchoolLunchDB:
             self.db.execute_write(sql, (new_average, new_count, meal_id))
         return True
 
-    def setup_initial_data(self):
+    def setup_initial_data(self) -> None:
         """Setup initial sample meal data"""
         sample_meals = [
             {
@@ -319,7 +321,7 @@ class SchoolLunchDB:
                 with self.db.transaction():
                     self.db.execute_write(sql, vals)
 
-    def import_menu_from_json(self, json_file_path="menu.json"):
+    def import_menu_from_json(self, json_file_path: str = "menu.json") -> Dict[str, Any]:
         """Import meals from JSON file (replaces api_fetch.py functionality)"""
         import json
         
