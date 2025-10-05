@@ -40,7 +40,7 @@ def create_sample_meals() -> List[Dict[str, Any]]:
     return [
         {
             "name": "Köttbullar med potatismos",
-            "description": "Klassiska svenska köttbullar serveras med krämigt potatismos och lingonsylt",
+            "description": "Ingredienser: Nötkött (65%), potatis, mjölk, ägg, ströbröd (vete), lök, salt, peppar, kryddor, smör, lingon, socker",
             "price": 120.00,
             "category": "Huvudrätt",
             "rating": 4.6,
@@ -48,7 +48,7 @@ def create_sample_meals() -> List[Dict[str, Any]]:
         },
         {
             "name": "Stekt strömming med potatis",
-            "description": "Stekt strömming med dillkokt potatis och skirat smör",
+            "description": "Ingredienser: Strömming (80%), potatis, smör, dill, salt, peppar, citron, mjöl (vete)",
             "price": 135.00,
             "category": "Fiskrätt",
             "rating": 4.2,
@@ -56,7 +56,7 @@ def create_sample_meals() -> List[Dict[str, Any]]:
         },
         {
             "name": "Vegetarisk lasagne",
-            "description": "Lasagne med zucchini, aubergine och tomatsås, toppad med ost",
+            "description": "Ingredienser: Lasagneplattor (vete), zucchini, aubergine, tomater, lök, vitlök, mozzarella (mjölk), parmesan (mjölk), olivolja, basilika, oregano, salt, peppar",
             "price": 125.00,
             "category": "Vegetariskt",
             "rating": 4.0,
@@ -64,7 +64,7 @@ def create_sample_meals() -> List[Dict[str, Any]]:
         },
         {
             "name": "Korv Stroganoff",
-            "description": "Klassisk korv stroganoff med ris",
+            "description": "Ingredienser: Falukorv (65%), ris, grädde (mjölk), tomatpuré, lök, smör, paprikapulver, salt, peppar, persilja",
             "price": 120.00,
             "category": "Huvudrätt",
             "rating": 3.9,
@@ -72,7 +72,7 @@ def create_sample_meals() -> List[Dict[str, Any]]:
         },
         {
             "name": "Raggmunk med fläsk",
-            "description": "Raggmunkar serveras med stekt fläsk och lingonsylt",
+            "description": "Ingredienser: Potatis (70%), mjöl (vete), mjölk, ägg, salt, sidfläsk, lingon, socker",
             "price": 140.00,
             "category": "Huvudrätt",
             "rating": 4.3,
@@ -80,7 +80,7 @@ def create_sample_meals() -> List[Dict[str, Any]]:
         },
         {
             "name": "Fiskgratäng med dill",
-            "description": "Fiskgratäng med dill och potatismos",
+            "description": "Ingredienser: Vit fisk (torsk 60%), potatis, mjölk, grädde, smör, mjöl (vete), dill, salt, peppar, ost (mjölk)",
             "price": 130.00,
             "category": "Fiskrätt",
             "rating": 4.1,
@@ -88,7 +88,7 @@ def create_sample_meals() -> List[Dict[str, Any]]:
         },
         {
             "name": "Grönsakssoppa med bröd",
-            "description": "Värmande grönsakssoppa serveras med färskt bröd",
+            "description": "Ingredienser: Morötter, potatis, purjolök, selleri, gul lök, tomater, grönsaksbuljon, olivolja, timjan, salt, peppar, fullkornsbröd (vete, råg)",
             "price": 120.00,
             "category": "Vegetariskt",
             "rating": 3.8,
@@ -96,7 +96,7 @@ def create_sample_meals() -> List[Dict[str, Any]]:
         },
         {
             "name": "Pannkakor med sylt och grädde",
-            "description": "Tunna pannkakor serveras med sylt och vispad grädde",
+            "description": "Ingredienser: Mjöl (vete), mjölk, ägg, salt, smör, jordgubbssylt (jordgubbar, socker), vispgrädde (mjölk)",
             "price": 125.00,
             "category": "Efterrätt",
             "rating": 4.7,

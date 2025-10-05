@@ -137,5 +137,49 @@ def rate_meal():
     else:
         return jsonify({'error': 'Failed to submit rating'}), 500
 
+@app.route('/api/import-openfoodfacts', methods=['POST'])
+def import_from_openfoodfacts():
+    """Importera måltider från Open Food Facts API"""
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    data = request.get_json()
+    search_term = data.get('search_term', 'pasta')
+    
+    try:
+        result = db.import_meals_from_openfoodfacts(search_term)
+        
+        if "error" in result:
+            return jsonify({'error': result['error']}), 500
+        
+        return jsonify({
+            'success': True,
+            'message': f"Importerade {result['added']} nya måltider för söktermen '{result['search_term']}'",
+            'details': result
+        })
+    except Exception as e:
+        return jsonify({'error': f'Import misslyckades: {str(e)}'}), 500
+
+@app.route('/api/test-openfoodfacts')
+def test_openfoodfacts():
+    """Test-endpoint för att testa Open Food Facts API"""
+    try:
+        # Import här för att undvika problem om modulen inte finns
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from skolmaten_api import search_food_ingredients
+        
+        meals = search_food_ingredients("pasta")
+        return jsonify({
+            'success': True,
+            'meals_found': len(meals),
+            'sample_meals': meals[:3] if meals else []  # Visa första 3 som exempel
+        })
+    except ImportError:
+        return jsonify({'error': 'Open Food Facts API inte tillgängligt'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Test misslyckades: {str(e)}'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
