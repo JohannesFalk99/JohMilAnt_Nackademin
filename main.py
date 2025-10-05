@@ -13,13 +13,18 @@ from typing import NoReturn
 import sys
 import subprocess
 import os
-from test import (
-    visa_elever,
-    visa_mat,
-    visa_detaljerad_mat, 
-    visa_statistik,
-    hamta_fran_api
-)
+
+# Add current directory to path to ensure we import our local test.py
+if os.path.dirname(os.path.abspath(__file__)) not in sys.path:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Import from our local test module
+import admin_menu as admin_cli
+visa_elever = admin_cli.visa_elever
+visa_mat = admin_cli.visa_mat  
+visa_detaljerad_mat = admin_cli.visa_detaljerad_mat
+visa_statistik = admin_cli.visa_statistik
+hamta_fran_api = admin_cli.hamta_fran_api
 
 
 def visa_huvudmeny() -> None:
