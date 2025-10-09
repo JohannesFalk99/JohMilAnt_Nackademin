@@ -129,42 +129,7 @@ class SchoolLunchDB:
             self.db.execute_write(sql, (new_average, new_count, meal_id))
         return True
 
-    def setup_initial_data(self) -> None:
-        """Setup initial sample meal data"""
-        sample_meals = [
-            {
-                "name": "Chicken Pasta", 
-                "description": "chicken, pasta, cream, vegetables, salt, pepper", 
-                "price": 45.0, 
-                "category": "main"
-            },
-            {
-                "name": "Vegetarian Salad", 
-                "description": "lettuce, tomato, cucumber, onion, olive oil, vinegar, salt, pepper", 
-                "price": 35.0, 
-                "category": "salad"
-            },
-            {
-                "name": "Fish and Chips", 
-                "description": "fish, potatoes, flour, oil, salt, pepper", 
-                "price": 50.0, 
-                "category": "main"
-            },
-            {
-                "name": "Fruit Cup", 
-                "description": "apple, banana, orange, grapes, pear", 
-                "price": 20.0, 
-                "category": "dessert"
-            }
-        ]
-        
-        for meal in sample_meals:
-            existing = self.db.execute("SELECT id FROM meals WHERE name = ?", (meal["name"],))
-            if not existing:
-                cols, vals = zip(*meal.items())
-                sql = f"INSERT INTO meals ({','.join(cols)}) VALUES ({','.join(['?']*len(vals))})"
-                with self.db.transaction():
-                    self.db.execute_write(sql, vals)
+
 
     def import_menu_from_json(self, json_file_path: str = "menu.json") -> Dict[str, Any]:
         """Import meals from JSON file (replaces api_fetch.py functionality)"""
