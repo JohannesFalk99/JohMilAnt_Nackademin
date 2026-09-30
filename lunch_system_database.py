@@ -215,120 +215,68 @@ class SchoolLunchDB:
         Hämta och importera livsmedel från Open Food Facts API (INGA RECEPT)
         
         Args:
-            search_term: Sökterm för livsmedel (t.ex. "pasta", …3333 tokens truncated…render_template('dashboard.html', username=session['username'])
-
-@app.route('/api/meals')
-def get_meals():
-    if not is_authenticated():
-        return jsonify({'error': 'Not logged in'}), 401
-    
-    try:
-        meals = db.get_all_meals()
-        meals_list = []
-        
-        if meals:  # Check if meals is not None
-            for meal in meals:
-                meals_list.append({
-                    'id': meal[0],
-                    'name': meal[1],
-                    'description': meal[2],
-                    'price': meal[3],
-                    'category': meal[4],
-                    'rating': round(meal[5], 1) if meal[5] else 0.0,  # meal[5] is rating
-                    'rating_count': meal[6] if meal[6] else 0  # meal[6] is rating_count
-                })
-        
-        return jsonify(meals_list)
-    except Exception as e:
-        app.logger.exception('Failed to load meals')
-        return jsonify({'error': 'Failed to load meals'}), 500
-
-@app.route('/api/order', methods=['POST'])
-def order_meal():
-    if not is_authenticated():
-        return jsonify({'error': 'Not logged in'}), 401
-    
-    data = request.get_json()
-    meal_id = data.get('meal_id')
-    
-    if not meal_id:
-        return jsonify({'error': 'No meal selected'}), 400
-    
-    # Record the transaction
-    student_id = session.get('student_id')
-    today = datetime.now().strftime('%Y-%m-%d')
-    
-    try:
-        transaction_id = db.record_transaction(student_id, meal_id, today)
-        return jsonify({'success': True, 'message': 'Order placed successfully!'})
-    except Exception as e:
-        return jsonify({'error': 'Failed to place order'}), 500
-
-@app.route('/api/rate', methods=['POST'])
-def rate_meal():
-    if not is_authenticated():
-        return jsonify({'error': 'Not logged in'}), 401
-    
-    data = request.get_json()
-    meal_id = data.get('meal_id')
-    rating = data.get('rating')
-    
-    if not meal_id or not rating:
-        return jsonify({'error': 'Missing meal ID or rating'}), 400
-    
-    if rating < 1 or rating > 5:
-        return jsonify({'error': 'Rating must be between 1 and 5'}), 400
-    
-    success = db.rate_meal(meal_id, rating)
-    if success:
-        return jsonify({'success': True, 'message': 'Rating submitted!'})
-    else:
-        return jsonify({'error': 'Failed to submit rating'}), 500
-
-@app.route('/api/import-openfoodfacts', methods=['POST'])
-def import_from_openfoodfacts():
-    """Importera måltider från Open Food Facts API"""
-    if not is_authenticated():
-        return jsonify({'error': 'Not logged in'}), 401
-    
-    data = request.get_json()
-    search_term = data.get('search_term', 'pasta')
-    
-    try:
-        result = db.import_meals_from_openfoodfacts(search_term)
-        
-        if "error" in result:
-            return jsonify({'error': result['error']}), 500
-        
-        return jsonify({
-            'success': True,
-            'message': f"Importerade {result['added']} nya måltider för söktermen '{result['search_term']}'",
-            'details': result
-        })
-    except Exception as e:
-        return jsonify({'error': f'Import misslyckades: {str(e)}'}), 500
-
-@app.route('/api/test-openfoodfacts')
-def test_openfoodfacts():
-    """Test-endpoint för att testa Open Food Facts API"""
-    try:
-        # Import här för att undvika problem om modulen inte finns
-        import sys
-        import os
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from skolmaten_api import search_food_ingredients
-        
-        meals = search_food_ingredients("pasta")
-        return jsonify({
-            'success': True,
-            'meals_found': len(meals),
-            'sample_meals': meals[:3] if meals else []  # Visa första 3 som exempel
-        })
-    except ImportError:
-        return jsonify({'error': 'Open Food Facts API inte tillgängligt'}), 500
-    except Exception as e:
-        return jsonify({'error': f'Test misslyckades: {str(e)}'}), 500
-
-if __name__ == '__main__':
-    app.run(debug=os.environ.get('FLASK_DEBUG') == '1', host='127.0.0.1', port=5000)
-
+            search_term: Sökterm för livsmedel (t.ex. "pasta", "chicken", "vegetables")
+            
+        Returns:
+            Dict med resultat av import (added, skipped, errors)
+        """
+        try:
+            # Import här för att undvika cirkulära imports
+            from skolmaten_api import search_food_ingredients
+            
+            # Hämta ENDAST livsmedel från Open Food Facts (inga recept)
+            food_products = search_food_ingredients(search_term)
+            
+            # Använd endast food products, INGA recept
+            all_meals = food_products
+            
+            if not all_meals:
+                return {"error": f"Inga måltider hittades för '{search_term}'", "added": 0, "skipped": 0}
+            
+            # Importera måltiderna till databasen
+            added = 0
+            skipped = 0
+            errors = []
+            
+            for meal_data in all_meals:
+                try:
+                    # Kontrollera om måltiden redan finns
+                    existing = self.db.execute(
+                        "SELECT id FROM meals WHERE name = ?",
+                        (meal_data.get("name", ""),)
+                    )
+                    
+                    if existing:
+                        skipped += 1
+                    else:
+                        # Lägg till måltiden
+                        meal_info = {
+                            "name": meal_data.get("name", ""),
+                            "description": meal_data.get("description", ""),
+                            "price": meal_data.get("price", 0.0),
+                            "category": meal_data.get("category", "Huvudrätt")
+                        }
+                        
+                        self.add_meal(meal_info)
+                        added += 1
+                        
+                except Exception as e:
+                    errors.append(f"Fel vid import av {meal_data.get('name', 'okänd måltid')}: {str(e)}")
+            
+            result = {
+                "added": added,
+                "skipped": skipped,
+                "search_term": search_term,
+                "total_found": len(all_meals),
+                "sources": "Open Food Facts + TheMealDB"
+            }
+            
+            if errors:
+                result["errors"] = errors
+            
+            return result
+            
+        except ImportError:
+            return {"error": "Food API-moduler kunde inte importeras", "added": 0, "skipped": 0}
+        except Exception as e:
+            return {"error": f"Oväntat fel: {str(e)}", "added": 0, "skipped": 0}
