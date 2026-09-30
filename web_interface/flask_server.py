@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from datetime import datetime, timedelta
+from flask_wtf.csrf import CSRFProtect, CSRFError
 import sys
 import os
 from typing import Dict, Any, Union
@@ -19,6 +20,18 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=timedelta(hours=1),
 )
 
+CSRFProtect(app)
+
+@app.errorhandler(CSRFError)
+def csrf_error(error):
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Session expired or invalid request. Reload the page.'}), 400
+    return 'Session expired or invalid request. Reload the login page and try again.', 400
+
+
+def is_authenticated():
+    return session.get('auth_version') == 2 and bool(session.get('student_id'))
+
 # Initialize database with absolute path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 db_path = os.environ.get('DATABASE_PATH', os.path.join(project_root, 'test.db'))
@@ -26,7 +39,7 @@ db = SchoolLunchDB(db_path)
 
 @app.route('/')
 def index():
-    if 'username' in session:
+    if is_authenticated():
         return redirect(url_for('dashboard'))
     return render_template('login.html')
 
@@ -37,50 +50,39 @@ def login():
         flash('Enter your name')
         return redirect(url_for('index'))
     
-    # Direct database query to avoid Row object issues
+    password = request.form.get('password', '')
     try:
-        import sqlite3
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        
-        # Look for student by name (case-insensitive)
-        cursor.execute("SELECT id, name FROM students WHERE LOWER(name) = LOWER(?)", (username,))
-        student = cursor.fetchone()
-        
-        
-        conn.close()
-        
+        student = db.authenticate_student(username, password)
         if student:
             session.clear()
             session.permanent = True
-            session['username'] = student[1]  # Use the actual name from database
-            session['student_id'] = student[0]  # student ID
+            session['username'] = student['name']
+            session['student_id'] = student['id']
+            session['auth_version'] = 2
             return redirect(url_for('dashboard'))
-        else:
-            flash('Username not found')
-            return redirect(url_for('index'))
-            
+        flash('Invalid name or password')
+        return redirect(url_for('index'))
+
     except Exception as e:
         app.logger.exception('Login failed')
         flash('Login is temporarily unavailable')
         return redirect(url_for('index'))
 
-@app.route('/logout')
+@app.route('/logout', methods=['POST'])
 def logout():
     session.clear()
     return redirect(url_for('index'))
 
 @app.route('/dashboard')
 def dashboard():
-    if 'username' not in session:
+    if not is_authenticated():
         return redirect(url_for('index'))
     
     return render_template('dashboard.html', username=session['username'])
 
 @app.route('/api/meals')
 def get_meals():
-    if 'username' not in session:
+    if not is_authenticated():
         return jsonify({'error': 'Not logged in'}), 401
     
     try:
@@ -106,7 +108,7 @@ def get_meals():
 
 @app.route('/api/order', methods=['POST'])
 def order_meal():
-    if 'username' not in session:
+    if not is_authenticated():
         return jsonify({'error': 'Not logged in'}), 401
     
     data = request.get_json()
@@ -127,7 +129,7 @@ def order_meal():
 
 @app.route('/api/rate', methods=['POST'])
 def rate_meal():
-    if 'username' not in session:
+    if not is_authenticated():
         return jsonify({'error': 'Not logged in'}), 401
     
     data = request.get_json()
@@ -149,7 +151,7 @@ def rate_meal():
 @app.route('/api/import-openfoodfacts', methods=['POST'])
 def import_from_openfoodfacts():
     """Importera måltider från Open Food Facts API"""
-    if 'username' not in session:
+    if not is_authenticated():
         return jsonify({'error': 'Not logged in'}), 401
     
     data = request.get_json()
