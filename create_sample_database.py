@@ -115,9 +115,8 @@ def setup_database(db_path: str = 'test.db', reset: bool = False, verbose: bool 
         os.remove(db_path)
     
     db = SchoolLunchDB(db_path)
-    db.setup_initial_data()
     
-    print("👥 Adding sample students...")
+    print("Adding sample students...")
     students = create_sample_students()
     student_count = 0
     
@@ -127,11 +126,11 @@ def setup_database(db_path: str = 'test.db', reset: bool = False, verbose: bool 
             student_count += 1
             log(f"Added student: {student['name']} (Grade {student.get('grade', 'N/A')}, Class {student.get('class', 'N/A')})")
         except Exception as e:
-            print(f"⚠️  Error adding student {student['name']}: {e}")
+            print(f"Error adding student {student['name']}: {e}")
     
-    print(f"✅ Added {student_count} students")
+    print(f"Added {student_count} students")
     
-    print("🍽️  Adding some serious gourmet shit")
+    print("Adding sample meals...")
     sample_meals = create_sample_meals()
     meal_count = 0
     
@@ -157,12 +156,12 @@ def setup_database(db_path: str = 'test.db', reset: bool = False, verbose: bool 
             log(f"Added meal: {meal['name']} (${meal['price']:.2f}) - {meal['category']}")
             
         except Exception as e:
-            print(f"⚠️  Error adding meal {meal['name']}: {e}")
+            print(f"Error adding meal {meal['name']}: {e}")
     
     total_meals = existing_count + meal_count
-    print(f"✅ Menu now has {total_meals} meals ({meal_count} added)")
+    print(f"Menu now has {total_meals} meals ({meal_count} added)")
     
-    print("📊 Adding sample transaction data...")
+    print("Adding sample transaction data...")
     transaction_count = 0
     
     try:
@@ -200,11 +199,11 @@ def setup_database(db_path: str = 'test.db', reset: bool = False, verbose: bool 
                 except Exception as e:
                     log(f"Error adding transaction: {e}")
     
-    print(f"✅ Added {transaction_count} sample transactions")
+    print(f"Added {transaction_count} sample transactions")
     
     # Final summary
     print("\n" + "=" * 60)
-    print("📋 DATABASE SETUP COMPLETE!")
+    print("DATABASE SETUP COMPLETE!")
     print("=" * 60)
     
     # Get final counts using direct SQL to avoid Row object issues
@@ -225,13 +224,13 @@ def setup_database(db_path: str = 'test.db', reset: bool = False, verbose: bool 
         student_total = 0
         meal_total = 0
     
-    print(f"👥 Total Students: {student_total}")
-    print(f"🍽️  Total Meals: {meal_total}")
-    print(f"📊 Sample Transactions: {transaction_count}")
-    print(f"📁 Database File: {os.path.abspath(db_path)}")
-    print(f"💾 Database Size: {os.path.getsize(db_path) / 1024:.1f} KB")
+    print(f"Total Students: {student_total}")
+    print(f"Total Meals: {meal_total}")
+    print(f"Sample Transactions: {transaction_count}")
+    print(f"Database File: {os.path.abspath(db_path)}")
+    print(f"Database Size: {os.path.getsize(db_path) / 1024:.1f} KB")
     
-    print("\n🚀 Ready to launch! Run: python launch_application.py")
+    print("\nReady to launch! Run: python launch_application.py")
     
     return True
 
@@ -245,11 +244,12 @@ def main():
     
     try:
         success = setup_database(args.database, args.reset, args.verbose)
-        print("\n✅ Setup completed!" if success else "\n❌ Setup failed.")
+        print("\nSetup completed!" if success else "\nSetup failed.")
         sys.exit(0 if success else 1)
     except Exception as e:
-        print(f"\n❌ Setup failed: {e}")
+        print(f"\nSetup failed: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
     main()
+

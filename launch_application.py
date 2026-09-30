@@ -4,8 +4,9 @@ import subprocess
 import time
 
 def setup_database() -> bool:
-    if not os.path.exists('test.db'):
-        subprocess.run([sys.executable, 'create_sample_database.py', '--reset'], check=True)
+    db_path = os.environ.get('DATABASE_PATH', 'test.db')
+    if not os.path.exists(db_path):
+        subprocess.run([sys.executable, 'create_sample_database.py', '--database', db_path], check=True)
     return True
 
 def launch_web_app() -> bool:
@@ -29,3 +30,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
