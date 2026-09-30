@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
 import os
 from typing import Dict, Any, Union
@@ -9,11 +9,19 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lunch_system_database import SchoolLunchDB
 
 app = Flask(__name__)
-app.secret_key = 'simple-secret-key'
+app.secret_key = os.environ.get('SECRET_KEY')
+if not app.secret_key:
+    raise RuntimeError('Set SECRET_KEY before starting the application')
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true',
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=1),
+)
 
 # Initialize database with absolute path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-db_path = os.path.join(project_root, 'test.db')
+db_path = os.environ.get('DATABASE_PATH', os.path.join(project_root, 'test.db'))
 db = SchoolLunchDB(db_path)
 
 @app.route('/')
@@ -24,8 +32,10 @@ def index():
 
 @app.route('/login', methods=['POST'])
 def login():
-    username = request.form['username']
-    print(f"🔐 LOGIN ATTEMPT: username = '{username}'")
+    username = request.form.get('username', '').strip()
+    if not username:
+        flash('Enter your name')
+        return redirect(url_for('index'))
     
     # Direct database query to avoid Row object issues
     try:
@@ -33,29 +43,27 @@ def login():
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
-        print(f"🔍 Searching for: LOWER('{username}') in database")
         
         # Look for student by name (case-insensitive)
         cursor.execute("SELECT id, name FROM students WHERE LOWER(name) = LOWER(?)", (username,))
         student = cursor.fetchone()
         
-        print(f"📊 Database result: {student}")
         
         conn.close()
         
         if student:
+            session.clear()
+            session.permanent = True
             session['username'] = student[1]  # Use the actual name from database
             session['student_id'] = student[0]  # student ID
-            print(f"✅ LOGIN SUCCESS: {student[1]} (ID: {student[0]})")
             return redirect(url_for('dashboard'))
         else:
-            print(f"❌ LOGIN FAILED: No user found for '{username}'")
             flash('Username not found')
             return redirect(url_for('index'))
             
     except Exception as e:
-        print(f"💥 LOGIN ERROR: {str(e)}")
-        flash(f'Login error: {str(e)}')
+        app.logger.exception('Login failed')
+        flash('Login is temporarily unavailable')
         return redirect(url_for('index'))
 
 @app.route('/logout')
@@ -93,7 +101,8 @@ def get_meals():
         
         return jsonify(meals_list)
     except Exception as e:
-        return jsonify({'error': f'Failed to load meals: {str(e)}'}), 500
+        app.logger.exception('Failed to load meals')
+        return jsonify({'error': 'Failed to load meals'}), 500
 
 @app.route('/api/order', methods=['POST'])
 def order_meal():
@@ -182,4 +191,5 @@ def test_openfoodfacts():
         return jsonify({'error': f'Test misslyckades: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=os.environ.get('FLASK_DEBUG') == '1', host='127.0.0.1', port=5000)
+

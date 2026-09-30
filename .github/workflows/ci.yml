@@ -1,0 +1,21 @@
+name: Tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+      - run: docker build -t school-lunch:test .
+      - name: Check container startup
+        run: |
+          docker run -d --name school-lunch -p 127.0.0.1:5000:5000 -e SECRET_KEY=ci-container-test-secret school-lunch:test
+          trap 'docker logs school-lunch; docker rm -f school-lunch' EXIT
+          curl --fail --retry 20 --retry-delay 1 --retry-connrefused http://127.0.0.1:5000/
