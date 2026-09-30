@@ -139,11 +139,15 @@
             background-color: #f44336;
         }
     </style>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
     <div class="header">
         <h1>Welcome, {{ username }}!</h1>
-        <a href="/logout" class="logout-btn">Logout</a>
+        <form method="POST" action="/logout">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
     </div>
 
     <div id="mealsContainer" class="meals-container">
@@ -151,7 +155,7 @@
     </div>
 
     <script>
-        let currentUser = "{{ username }}";
+        const currentUser = {{ username | tojson }};
         
         function showMessage(text, type = 'success') {
             const message = document.createElement('div');
@@ -181,7 +185,7 @@
         function orderMeal(mealId) {
             fetch('/api/order', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
                 body: JSON.stringify({ meal_id: mealId })
             })
             .then(response => response.json())
@@ -200,7 +204,7 @@
         function rateMeal(mealId, rating) {
             fetch('/api/rate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
                 body: JSON.stringify({ meal_id: mealId, rating: rating })
             })
             .then(response => response.json())

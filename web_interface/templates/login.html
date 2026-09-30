@@ -74,7 +74,7 @@
 </head>
 <body>
     <div class="login-container">
-        <h1>🍽️ School Lunch Login</h1>
+        <h1>School Lunch Login</h1>
         
         {% with messages = get_flashed_messages() %}
             {% if messages %}
@@ -85,16 +85,21 @@
         {% endwith %}
         
         <form method="POST" action="/login">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="username">Your Name:</label>
                 <input type="text" id="username" name="username" required placeholder="Enter your full name">
             </div>
             
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
+            </div>
             <button type="submit" class="login-btn">Login</button>
         </form>
         
         <div class="help-text">
-            Enter your name as it appears in the student list
+            Use your student name and password.
         </div>
     </div>
 </body>

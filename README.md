@@ -16,7 +16,7 @@ export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
 python launch_application.py
 ```
 
-Open http://127.0.0.1:5000 and enter a sample student name, such as `Alice Johansson`.
+Open http://127.0.0.1:5000 and enter a sample student name, such as `Alice Johansson`, with password `school-lunch-demo`. This shared password is only for sample data.
 
 The launcher creates sample data when `test.db` is missing. To replace local sample data:
 
@@ -37,7 +37,7 @@ Paste the generated value after `SECRET_KEY=` in `.env`, then run:
 docker compose up --build
 ```
 
-Open http://127.0.0.1:5000. SQLite data is stored in the `lunch-data` volume and survives container restarts. The container runs as a non-root user and serves the application with Gunicorn.
+Open http://127.0.0.1:5000. A fresh database uses the same sample login shown above. SQLite data is stored in the `lunch-data` volume and survives container restarts. The container runs as a non-root user and serves the application with Gunicorn.
 
 ## How it works
 
@@ -77,9 +77,33 @@ Docker Compose reads `.env`. For direct Python startup, export variables in the 
 
 ## Current limitations
 
-Login uses a student name without a password. Anyone who knows a name can access that student's account. This is a local learning demo and should not be used with real student data or exposed publicly.
+Login requires a student name and password. Passwords are stored as salted hashes, and login, logout and POST API requests use CSRF protection. This is still a local learning demo: sample accounts share a publicly documented password. Do not use it with real student data or expose it publicly.
 
-Password authentication, role-based permissions and CSRF protection are still needed before deployment. Allergy information is stored, but meals are not automatically filtered by allergies. Administrative database operations are available in Python and command-line scripts; the web interface does not provide a separate admin role.
+Role-based permissions, login rate limiting and deployment hardening are still needed before deployment. Allergy information is stored, but meals are not automatically filtered by allergies. Administrative database operations are available in Python and command-line scripts; the web interface does not provide a separate admin role.
+
+## Existing databases
+
+Existing students do not get automatic passwords. The application adds a credentials table without deleting students, meals or orders. Set a password for each account you want to use:
+
+```bash
+python set_student_password.py --name "Alice Johansson"
+```
+
+The command prompts locally and stores a hash. For a custom database, add `--database path/to/lunch.db`. To regenerate disposable sample data instead, run `python create_sample_database.py --reset`; this deletes the old local data.
+
+Sessions created before password authentication was added are rejected. Existing Docker volumes keep their data; run the password command inside the container:
+
+```bash
+docker compose exec web python set_student_password.py --name "Alice Johansson"
+```
+
+## Milad's recent work
+
+Milad added the Docker setup, automated tests and GitHub Actions workflow, fixed fresh database setup, and simplified the documentation in [pull request #6](https://github.com/JohannesFalk99/JohMilAnt_Nackademin/pull/6). The original application was built as a group project.
+
+## CI status
+
+The workflow is configured to run tests and check container startup. GitHub currently prevents jobs from starting because the repository owner's account is locked due to a billing issue. The owner must resolve that in GitHub billing before CI can run. Local tests can still be run using the command above.
 
 ## Team
 

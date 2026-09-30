@@ -122,7 +122,8 @@ def setup_database(db_path: str = 'test.db', reset: bool = False, verbose: bool 
     
     for student in students:
         try:
-            db.add_student(student)
+            student_id = db.add_student(student)
+            db.set_student_password(student_id, "school-lunch-demo")
             student_count += 1
             log(f"Added student: {student['name']} (Grade {student.get('grade', 'N/A')}, Class {student.get('class', 'N/A')})")
         except Exception as e:
