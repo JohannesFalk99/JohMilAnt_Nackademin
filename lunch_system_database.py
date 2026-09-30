@@ -1,6 +1,7 @@
 from database_wrapper import SQLiteDB
 from typing import List, Dict, Optional, Any, Tuple
 import sqlite3
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class SchoolLunchDB:
     def __init__(self, db_path: str) -> None:
@@ -57,6 +58,39 @@ class SchoolLunchDB:
                     FOREIGN KEY (meal_id) REFERENCES meals (id)
                 )
             """)
+
+            self.db.execute_write("""
+                CREATE TABLE IF NOT EXISTS student_credentials (
+                    student_id INTEGER PRIMARY KEY,
+                    password_hash TEXT NOT NULL,
+                    FOREIGN KEY (student_id) REFERENCES students (id)
+                )
+            """)
+
+    def set_student_password(self, student_id: int, password: str) -> None:
+        if len(password) < 12:
+            raise ValueError('Use a password with at least 12 characters')
+        if not self.db.execute('SELECT id FROM students WHERE id = ?', (student_id,)):
+            raise ValueError('Student not found')
+        self.db.execute_write(
+            'INSERT INTO student_credentials (student_id, password_hash) VALUES (?, ?) '
+            'ON CONFLICT(student_id) DO UPDATE SET password_hash = excluded.password_hash',
+            (student_id, generate_password_hash(password)),
+        )
+
+    def authenticate_student(self, name: str, password: str):
+        students = self.db.execute(
+            'SELECT s.id, s.name, c.password_hash FROM students s '
+            'JOIN student_credentials c ON c.student_id = s.id '
+            'WHERE LOWER(s.name) = LOWER(?)', (name,)
+        )
+        # Duplicate names must be resolved before allowing login.
+        if len(students) != 1:
+            return None
+        student = students[0]
+        if check_password_hash(student['password_hash'], password):
+            return student
+        return None
 
     # --- BASIC OPERATIONS ---
 
